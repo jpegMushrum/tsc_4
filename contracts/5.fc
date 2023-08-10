@@ -21,7 +21,7 @@
   int F_0 = 0;
   int F_1 = 1;
   int F_i = 0;
-  tuple result = null();
+  tuple result = empty_tuple();
 
   if ((n == 0) & (k > 0)) {
     result~tpush(F_0);
@@ -39,13 +39,13 @@
     F_1 = F_i;
   }
 
-  repeat (k) {
+  while (k > 0) {
     F_i = F_0 + F_1;
     result~tpush(F_i);
     F_0 = F_1;
     F_1 = F_i;
+    k = k - 1;
   }
 
   return result;
 }
-
