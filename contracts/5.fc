@@ -25,11 +25,11 @@
 
   if ((n == 0) & (k > 0)) {
     result~tpush(F_0);
-    k = k - 1;
+    k -= 1;
   }
   if ((n <= 1) & (k > 0)) {
     result~tpush(F_1);
-    k = k - 1;
+    k -= 1;
   }
 
   repeat (n - 2) {
@@ -39,12 +39,11 @@
     F_1 = F_i;
   }
 
-  while (k > 0) {
+  repeat (k) {
     F_i = F_0 + F_1;
     result~tpush(F_i);
     F_0 = F_1;
     F_1 = F_i;
-    k = k - 1;
   }
 
   return result;
