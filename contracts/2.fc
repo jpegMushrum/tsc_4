@@ -8,12 +8,41 @@
   Matrix can be rectangular where matrixA must to be of size n*m & matrixB of size m*p.
   After calculating the result matrix, the function should return final result (as tuple).
 -}
+(int) tlen (tuple t) asm "TLEN";
 
 () recv_internal() {
 }
 
 ;; testable
 (tuple) matrix_multiplier(tuple matrixA, tuple matrixB) method_id {
-  return null();
+
+  int n = matrixA.tlen();
+  int m = matrixB.tlen();
+  int p = matrixB.at(0).tlen();
+
+  int i = 0;
+  int j = 0;
+  int t = 0;
+
+  int item = 0;
+
+  tuple result = empty_tuple();
+
+  while (i < n) {
+    result~tpush(empty_tuple());
+    while (j < p) {
+      while (t < m) {
+        item += matrixA.at(i).at(t) * matrixB.at(t).at(i);
+        t += 1;
+      }
+      result.at(i)~tpush(item);
+      j += 1;
+      t = 0;
+      item = 0;
+    }
+    i += 1;
+  }
+
+  return result;
 }
 
