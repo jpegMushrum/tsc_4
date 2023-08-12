@@ -27,19 +27,20 @@
   int item = 0;
 
   tuple result = empty_tuple();
-
+  tuple stroke = empty_tuple();
   while (i < n) {
-    result~tpush(empty_tuple());
     while (j < p) {
       while (t < m) {
-        item += matrixA.at(i).at(t) * matrixB.at(t).at(i);
+        item += matrixA.at(i).at(t) * matrixB.at(t).at(j);
         t += 1;
       }
-      result.at(i)~tpush(item);
+      stroke~tpush(item);
       j += 1;
       t = 0;
       item = 0;
     }
+    result~tpush(stroke);
+    stroke = empty_tuple();
     i += 1;
   }
 
