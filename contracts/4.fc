@@ -8,6 +8,7 @@
 forall X -> int is_null (X x) asm "ISNULL";
 forall X -> (tuple, ()) push_back (tuple tail, X head) asm "CONS";
 forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
+(int) tlen (tuple t) asm "TLEN";
 
 () recv_internal() {
 }
@@ -17,7 +18,7 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
   builder result = begin_cell();
   int char = 0;
   int flag = 1;
-  shift = shift % 26 + shift / 26;
+  shift = shift % 26;
   int ashift = shift - 26;
   tuple stack = null();
   slice s1 = text.begin_parse();
@@ -54,7 +55,12 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
       result.store_uint(char,8);
     }  
     if (~ stack.is_null()) {
-      result = begin_cell().store_ref(result.end_cell());
+      if (stack.tlen() > 1) {
+        result = begin_cell().store_ref(result.end_cell());
+      }
+      else {
+        result = begin_cell().store_uint(0,32).store_ref(result.end_cell());
+      }
     }
     else {
       flag = 0;
@@ -69,7 +75,7 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
   builder result = begin_cell();
   int char = 0;
   int flag = 1;
-  shift = shift % 26 + shift / 26;
+  shift = shift % 26;
   int ashift = shift - 26;
   tuple stack = null();
   slice s1 = text.begin_parse();
@@ -106,13 +112,18 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
       result.store_uint(char,8);
     }  
     if (~ stack.is_null()) {
-      result = begin_cell().store_ref(result.end_cell());
+      if (stack.tlen() > 1) {
+        result = begin_cell().store_ref(result.end_cell());
+      }
+      else {
+        result = begin_cell().store_uint(0,32).store_ref(result.end_cell());
+      }
     }
     else {
       flag = 0;
     }
   }
-
+  
   return result.end_cell();
 }
 
