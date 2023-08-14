@@ -8,7 +8,6 @@
 forall X -> int is_null (X x) asm "ISNULL";
 forall X -> (tuple, ()) push_back (tuple tail, X head) asm "CONS";
 forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
-(int) tlen (tuple t) asm "TLEN";
 
 () recv_internal() {
 }
@@ -23,49 +22,54 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
   tuple stack = null();
   slice s1 = text.begin_parse();
   slice s2 = null();
-
-
-
+ 
   s1~skip_bits(32);
-  while (s1.slice_refs_empty?()) {
-    s2 = s1~load_ref().begin_parse();
-    stack~push_back(s1);
-    s1 = s2;
-  }
-  stack~push_back(s1);
 
-  while (flag) {
-    s1 = stack~pop_back();
-    while (s1.slice_data_empty?()) {
-      char = s1~load_uint(8);
-      if (char <= 90) & (char + shift > 90) {
+  while (~ s1.slice_data_empty?()) {
+    char = s1~load_uint(8);      
+    if ((char <= 90) & (char + shift > 90)) {
+      char += ashift;
+    }
+    else {
+      if ((char <= 122) & (char + shift > 122)) {
         char += ashift;
       }
       else {
-        if (char <= 122) & (char + shift > 122) {
+          if (((char <= 90) & (char >= 65)) | ((char <= 122) & (char >= 97))) {
+          char += shift;
+        }
+      }
+    }
+    result~store_uint(char,8);
+  }
+
+  while (~ s1.slice_refs_empty?()) {
+    stack~push_back(result);
+    result = begin_cell();
+    s1 = s1~load_ref().begin_parse();
+    while (~ s1.slice_data_empty?()) {
+      char = s1~load_uint(8);
+      if ((char <= 90) & (char + shift > 90)) {
+        char += ashift;
+      }
+      else {
+        if ((char <= 122) & (char + shift > 122)) {
           char += ashift;
         }
         else {
-          if ((char <= 90) & (char >= 65)) | ((char <= 122) & (char >= 97)) {
+          if (((char <= 90) & (char >= 65)) | ((char <= 122) & (char >= 97))) {
             char += shift;
           }
         }
       }
-
-      result.store_uint(char,8);
-    }  
-    if (~ stack.is_null()) {
-      if (stack.tlen() > 1) {
-        result = begin_cell().store_ref(result.end_cell());
-      }
-      else {
-        result = begin_cell().store_uint(0,32).store_ref(result.end_cell());
-      }
-    }
-    else {
-      flag = 0;
+      result~store_uint(char,8);
     }
   }
+
+  while (~ stack.is_null()) {
+    result = stack~pop_back().store_ref(result.end_cell());
+  }
+  result = begin_cell().store_uint(0,32).store_slice(result.end_cell().begin_parse());
 
   return result.end_cell();
 }
@@ -81,19 +85,29 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
   slice s1 = text.begin_parse();
   slice s2 = null();
 
-
-
-  s1~skip_bits(32);
-  while (s1.slice_refs_empty?()) {
-    s2 = s1~load_ref().begin_parse();
-    stack~push_back(s1);
-    s1 = s2;
+  while (~ s1.slice_data_empty?()) {
+    char = s1~load_uint(8);
+    if (char >= 65) & (char - shift < 65) {
+      char -= ashift;
+    }
+    else {
+      if (char >= 97) & (char - shift < 97) {
+        char -= ashift;
+      }
+      else {
+        if ((char <= 90) & (char >= 65)) | ((char <= 122) & (char >= 97)) {
+          char -= shift;
+        }
+      }
+    }
+    result~store_uint(char,8);
   }
-  stack~push_back(s1);
 
-  while (flag) {
-    s1 = stack~pop_back();
-    while (s1.slice_data_empty?()) {
+  while (~ s1.slice_refs_empty?()) {
+    stack~push_back(result);
+    result = begin_cell();
+    s1 = s1~load_ref().begin_parse();
+    while (~ s1.slice_data_empty?()) {
       char = s1~load_uint(8);
       if (char >= 65) & (char - shift < 65) {
         char -= ashift;
@@ -108,22 +122,15 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
           }
         }
       }
-
-      result.store_uint(char,8);
-    }  
-    if (~ stack.is_null()) {
-      if (stack.tlen() > 1) {
-        result = begin_cell().store_ref(result.end_cell());
-      }
-      else {
-        result = begin_cell().store_uint(0,32).store_ref(result.end_cell());
-      }
-    }
-    else {
-      flag = 0;
+      result~store_uint(char,8);
     }
   }
   
+  while (~ stack.is_null()) {
+    result = stack~pop_back().store_ref(result.end_cell());
+  }
+  result = begin_cell().store_uint(0,32).store_slice(result.end_cell().begin_parse());
+
   return result.end_cell();
 }
 
