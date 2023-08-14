@@ -85,6 +85,7 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
   slice s1 = text.begin_parse();
   slice s2 = null();
 
+  s1~skip_bits(32);
   while (~ s1.slice_data_empty?()) {
     char = s1~load_uint(8);
     if (char >= 65) & (char - shift < 65) {
@@ -133,4 +134,3 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
 
   return result.end_cell();
 }
-
