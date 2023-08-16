@@ -20,7 +20,6 @@
 (tuple) fibonacci_sequence (int n, int k) method_id {
   int F_0 = 0;
   int F_1 = 1;
-  int F_i = 0;
   tuple result = empty_tuple();
 
   if ((n == 0) & (k > 0)) {
@@ -33,17 +32,12 @@
   }
 
   repeat (n - 2) {
-    F_i = F_0 + F_1;
-
-    F_0 = F_1;
-    F_1 = F_i;
+    (F_0, F_1) = (F_1, F_0 + F_1);
   }
 
   repeat (k) {
-    F_i = F_0 + F_1;
-    result~tpush(F_i);
-    F_0 = F_1;
-    F_1 = F_i;
+    (F_0, F_1) = (F_1, F_0 + F_1);
+    result~tpush(F_1);
   }
 
   return result;

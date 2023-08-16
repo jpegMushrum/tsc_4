@@ -25,7 +25,7 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
  
   s1~skip_bits(32);
 
-  while (~ s1.slice_data_empty?()) {
+  repeat (s1.slice_bits() / 8) {
     char = s1~load_uint(8);      
     if ((char <= 90) & (char + shift > 90)) {
       char += ashift;
@@ -47,8 +47,8 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
     stack~push_back(result);
     result = begin_cell();
     s1 = s1~load_ref().begin_parse();
-    while (~ s1.slice_data_empty?()) {
-      char = s1~load_uint(8);
+    repeat (s1.slice_bits() / 8) {
+      char = s1~load_uint(8);      
       if ((char <= 90) & (char + shift > 90)) {
         char += ashift;
       }
@@ -57,12 +57,12 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
           char += ashift;
         }
         else {
-          if (((char <= 90) & (char >= 65)) | ((char <= 122) & (char >= 97))) {
+            if (((char <= 90) & (char >= 65)) | ((char <= 122) & (char >= 97))) {
             char += shift;
           }
         }
       }
-      result~store_uint(char,8);
+    result~store_uint(char,8);
     }
   }
 
@@ -86,7 +86,7 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
   slice s2 = null();
 
   s1~skip_bits(32);
-  while (~ s1.slice_data_empty?()) {
+  repeat (s1.slice_bits() / 8) {
     char = s1~load_uint(8);
     if (char >= 65) & (char - shift < 65) {
       char -= ashift;
@@ -108,7 +108,7 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
     stack~push_back(result);
     result = begin_cell();
     s1 = s1~load_ref().begin_parse();
-    while (~ s1.slice_data_empty?()) {
+    repeat (s1.slice_bits() / 8) {
       char = s1~load_uint(8);
       if (char >= 65) & (char - shift < 65) {
         char -= ashift;
