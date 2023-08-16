@@ -29,9 +29,9 @@ forall X -> (tuple) to_tuple (X x) asm "NOP";
 
   tuple result = empty_tuple();
   tuple stroke = empty_tuple();
-  while (i < n) {
-    while (j < p) {
-      while (t < m) {
+  repeat(n) {
+    repeat(p) {
+      repeat(m) {
         item += matrixA.at(i).at(t) * matrixB.at(t).at(j);
         t += 1;
       }
