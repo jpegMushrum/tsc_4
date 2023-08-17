@@ -9,7 +9,6 @@
   After calculating the result matrix, the function should return final result (as tuple).
 -}
 (int) tlen (tuple t) asm "TLEN";
-forall X -> (tuple) to_tuple (X x) asm "NOP";
 
 () recv_internal() {
 }
