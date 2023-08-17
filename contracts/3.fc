@@ -16,123 +16,94 @@
 
 -}
 (int) tlen (tuple t) asm "TLEN";
+forall X -> int is_null (X x) asm "ISNULL";
+forall X -> (tuple, ()) push_back (tuple tail, X head) asm "CONS";
+forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
+(int) ubitsize (int a) asm "UBITSIZE";
 
 () recv_internal() {  
 }
 
-(int) find_bin_length (int a) {
-  if (a == 0) {
-    return 1;
-  }
-  int res = 0;
-  while (a > 0) {
-    res += 1;
-    a = a / 2;
-  } 
-  return res;
-}
-
 ;; testable
-(cell) find_and_replace(int flag, int value, cell linked_list) method_id {
-  slice s1 = linked_list.begin_parse();
-  slice s2 = s1;
+(cell) find_and_replace(int flag, int value, cell linked_list) method_id { 
+  tuple stack = null();
+  slice s = linked_list.begin_parse();
+  int n = ubitsize(flag);
+  int m = ubitsize(value);
+  int register = 0;
+  slice chunk = begin_cell().end_cell().begin_parse();
   builder res = begin_cell();
-  tuple res_t = empty_tuple();
-  int n = find_bin_length(flag);
-  int m = find_bin_length(value);
-  tuple text = empty_tuple();
-
-  while (~ s1.slice_refs_empty?()) {
-    s2 = s1~load_ref().begin_parse();
-    text~tpush(s1);
-    s1 = s2;
-  }
+  int f? = 1;
+  int i = 0;
+  int j = 0;
+  int item = 0;
   
-  int a = 1;
-  tuple p = empty_tuple();
-  
-  repeat (128) {
-    p~tpush(a);
-    a *= 2;
-  }
-
-  a = 0;
-  int i1 = 0;
-  int i2 = 0;
-  int k = 0;
-  int text_size = text.tlen();
-
-  while (flag) {
-    if (k < n) {  
-      if (a < text_size - 1) {
-        ;; не последняя часть текста, реализовать считывание с 2 частей + запись в 2 части
-        i1 = s1.preload_uint(k) * p.at(n - k);
-        i2 = text.at(a + 1).preload_uint(n - k);
-        if (i1 + i2 == flag){
-          if (res.builder_bits() + m > 1023) {
-            k = 1023 - res.builder_bits(); ;; осталось бит, бит во 2 части: m - k
-            i2 = value;
-            i1 = i2 / p.at(m - k);
-            i2 = i2 % p.at(m - k);
-            res~store_uint(i1, k);
-            res_t~tpush(res);
-            res = begin_cell().store_uint(i2, m - k);
-            a += 1;
-            s1 = text.at(a).skip_bits(n - k);  
-          }
-          else {
-            res~store_uint(value, m);
-            a += 1;
-            s1 = text.at(a).skip_bits(n - k);
-          }
-        }
-        else {
-          if (res.builder_bits() == 1023) {
-            res_t~tpush(res);
-            res = begin_cell();
-          }
-          res~store_uint(s1~load_uint(1), 1);
-        }
-      }
+  while (f?) {
+    if (s.slice_bits() < 256) {
+      register = s~load_uint(s.slice_bits());
+      if (s.slice_refs_empty?()) {
+        f? = 0;
+      } 
       else {
-        while (~ s1.slice_data_empty?()) {
-          if (res.builder_bits() == 1023) {
-            res_t~tpush(res);
-            res = begin_cell();
-          }
-          res~store_uint(s1~load_uint(1), 1);
-        }
-        flag = 0;
+        s = s~load_ref().begin_parse();
       }
     }
     else {
-      if (s1.preload_uint(n) == flag) {
-        if (res.builder_bits() + m > 1023) {
-          k = 1023 - res.builder_bits(); ;; осталось бит, бит во 2 части: m - k
-          i2 = value;
-          i1 = i2 / p.at(m - k);
-          i2 = i2 % p.at(m - k);
-          res~store_uint(i1, k);
-          res_t~tpush(res);
-          res = begin_cell().store_uint(i2, m - k);
-          s1~skip_bits(n);
+      register = s~load_uint(256);
+    }
+    
+    i = 0;
+    chunk = begin_cell().store_uint(chunk~load_uint(chunk.slice_bits()), chunk.slice_bits()).store_uint(register, ubitsize(register)).end_cell().begin_parse();
+    while (chunk.slice_bits() >= n) {
+      if (chunk.preload_uint(n) == flag) {
+        j = 1023 - res.builder_bits();
+        if (j > i) {
+          res~store_uint(chunk~load_uint(i), i);
+          j -= i;
+          if (j > m) {
+            res~store_uint(value, m);
+            chunk~skip_bits(n);
+          }
+          else {
+            item = value >> m - j;
+            res~store_uint(item, j);
+            stack~push_back(res);
+            item = item << m - j;
+            item = value - item;
+            res = begin_cell().store_uint(item, m - j);
+            chunk.skip_bits(n);
+          }
         }
         else {
-          res~store_uint(value, m);
-          s1~skip_bits(n);
+          res~store_uint(chunk~load_uint(j), j);
+          stack~push_back(res);
+          i -= j;
+          res = begin_cell().store_uint(chunk~load_uint(i), i).store_uint(value, m);
         }
       }
       else {
-        res~store_uint(s1~load_uint(1), 1);
+        chunk~skip_bits(1);
+        i += 1;
       }
     }
   }
-  int i = res_t.tlen();
-  repeat (i) {
-    i -= 1;
-    res = res_t.at(i).store_ref(res.end_cell());
+
+  if (~ chunk.slice_data_empty?()) {
+    j = 1023 - res.builder_bits();
+    if (j >= chunk.slice_bits()) {
+      res~store_uint(chunk~load_uint(chunk.slice_bits()), chunk.slice_bits());
+    }
+    else {
+      res~store_uint(chunk~load_uint(j), j);
+      stack~push_back(res);
+      res = begin_cell().store_uint(chunk~load_uint(chunk.slice_bits()), chunk.slice_bits());
+    }
   }
-  ;; реализовать сохранение всего текста в res
+
+  ;; res = stack.pop_back();
+  while (~ stack.is_null()) {
+    res = stack~pop_back().store_ref(res.end_cell());
+  }
+
   return res.end_cell();
 }
-
