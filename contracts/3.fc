@@ -21,8 +21,6 @@ forall X -> (tuple, ()) push_back (tuple tail, X head) asm "CONS";
 forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
 (int) ubitsize (int a) asm "UBITSIZE";
 
-() recv_internal() {  
-}
 ;; testable
 (cell) find_and_replace(int flag, int value, cell linked_list) method_id { 
   tuple stack = null();
@@ -39,7 +37,7 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
   int left = 0;
 
   while (f?) {
-    if (s.slice_bits() < 256) {
+    if (s.slice_bits() < 128) {
       j = s.slice_bits();
       register = s~load_uint(j);
       if (s.slice_refs_empty?()) {
@@ -50,8 +48,8 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
       }
     }
     else {
-      j = 256;
-      register = s~load_uint(256);
+      j = 128;
+      register = s~load_uint(128);
     }
     
     i = 0;
@@ -85,7 +83,7 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
       }
     }
     j = 1023 - res.builder_bits();
-    if (j > i) {
+    if (j >= i) {
       res~store_uint(chunk~load_uint(i), i);
     }
     else {
@@ -100,7 +98,6 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
       res~store_uint(chunk~load_uint(chunk.slice_bits()), chunk.slice_bits());
     }
     else {
-      res~store_uint(chunk~load_uint(j), j);
       stack~push_back(res);
       res = begin_cell().store_uint(chunk~load_uint(chunk.slice_bits()), chunk.slice_bits());
     }
@@ -111,4 +108,11 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
   }
 
   return res.end_cell();
+}
+
+() recv_internal() {  
+  cell text = begin_cell().store_uint(24,256).store_uint(24,256).store_uint(24,256).store_uint(24,255).end_cell();
+  text = find_and_replace(24, 69, text);
+
+  slice s = text.begin_parse();
 }
