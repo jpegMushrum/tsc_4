@@ -21,7 +21,7 @@ forall X -> (tuple, ()) push_back (tuple tail, X head) asm "CONS";
 forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
 (int) ubitsize (int a) asm "UBITSIZE";
 
-() recv_internal() { 
+() recv_internal() {  
 }
 ;; testable
 (cell) find_and_replace(int flag, int value, cell linked_list) method_id { 
@@ -31,13 +31,12 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
   int m = ubitsize(value);
   int register = 0;
   slice chunk = begin_cell().end_cell().begin_parse();
-  slice check = chunk;
   builder res = begin_cell();
   int f? = 1;
   int i = 0;
   int j = 0;
-  int skiped = 0;
-  int length = 0;
+  int item = 0;
+  int left = 0;
 
   while (f?) {
     if (s.slice_bits() < 256) {
@@ -57,36 +56,41 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
     
     i = 0;
     chunk = begin_cell().store_slice(chunk~load_bits(chunk.slice_bits())).store_uint(register, j).end_cell().begin_parse();
-    length = chunk.slice_bits() - n;
-     
-    while(i <= length){
-      if (chunk.skip_bits(i).preload_uint(n) == flag){
-        if (res.builder_bits() + (i - skiped) > 1023) {
-          stack~push_back(res);
-          res = begin_cell();
+    left = chunk.slice_bits();
+    while (left >= n) {
+      if (chunk.skip_bits(i).preload_uint(n) == flag) {
+        j = 1023 - res.builder_bits();
+        if (j >= i) {
+          res~store_uint(chunk~load_uint(i), i);
+          j -= i;
+          if (j >= m) {
+            res~store_uint(value, m);
+          }
+          else {
+            stack~push_back(res);
+            res = begin_cell().store_uint(value, m);          
+          }
         }
-        res~store_uint(chunk.skip_bits(skiped).preload_uint(i - skiped), i - skiped);
-        i += n;
-        if (res.builder_bits() + m > 1023){
+        else {
           stack~push_back(res);
-          res = begin_cell();
+          res = begin_cell().store_uint(chunk~load_uint(i), i).store_uint(value, m);
         }
-        res~store_uint(value, m);
-        skiped = i;
-      } 
+        chunk~skip_bits(n);
+        left -= n;
+        i = 0;
+      }
       else {
+        left -= 1;
         i += 1;
       }
     }
-
-    chunk~skip_bits(skiped);
     j = 1023 - res.builder_bits();
-    if (j > i - skiped) {
-      res~store_uint(chunk~load_uint(i - skiped), i - skiped);
+    if (j > i) {
+      res~store_uint(chunk~load_uint(i), i);
     }
     else {
       stack~push_back(res);
-      res = begin_cell().store_uint(chunk~load_uint(i - skiped), i - skiped);
+      res = begin_cell().store_uint(chunk~load_uint(i), i);
     }
   }
 
@@ -96,6 +100,7 @@ forall X -> (tuple, (X)) pop_back (tuple t) asm "UNCONS";
       res~store_uint(chunk~load_uint(chunk.slice_bits()), chunk.slice_bits());
     }
     else {
+      res~store_uint(chunk~load_uint(j), j);
       stack~push_back(res);
       res = begin_cell().store_uint(chunk~load_uint(chunk.slice_bits()), chunk.slice_bits());
     }
